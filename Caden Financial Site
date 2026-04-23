@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Caden Munro Financial Analysis Tool</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      background-color: #f5f7fa;
+      padding: 30px;
+      text-align: center;
+    }
+
+    h1 {
+      color: #2c3e50;
+    }
+
+    .container {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      width: 400px;
+      margin: auto;
+      box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+    }
+
+    input {
+      width: 90%;
+      padding: 10px;
+      margin: 10px 0;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    .results {
+      margin-top: 20px;
+      text-align: left;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>Caden Munro – Financial Analysis Tool</h1>
+
+<div class="container">
+
+  <h3>Enter Data</h3>
+
+  <p><strong>Stock Returns (%)</strong></p>
+  <input id="stock" placeholder="e.g. 5, -2, 3, 4">
+
+  <p><strong>Market Returns (%)</strong></p>
+  <input id="market" placeholder="e.g. 4, -1, 2, 3">
+
+  <p><strong>Risk-Free Rate (%)</strong></p>
+  <input id="rf" placeholder="e.g. 2">
+
+  <button onclick="calculate()">Calculate</button>
+
+  <div class="results">
+    <p><strong>Average Return:</strong> <span id="avg"></span></p>
+    <p><strong>Volatility (Std Dev):</strong> <span id="vol"></span></p>
+    <p><strong>Beta:</strong> <span id="beta"></span></p>
+    <p><strong>Sharpe Ratio:</strong> <span id="sharpe"></span></p>
+  </div>
+
+</div>
+
+<script>
+
+function parseInput(id) {
+  return document.getElementById(id).value.split(",").map(Number);
+}
+
+function average(data) {
+  return data.reduce((a,b)=>a+b,0) / data.length;
+}
+
+function stdDev(data, avg) {
+  let variance = data.reduce((sum,x)=> sum + Math.pow(x-avg,2),0) / data.length;
+  return Math.sqrt(variance);
+}
+
+function calcBeta(stock, market) {
+  let avgStock = average(stock);
+  let avgMarket = average(market);
+
+  let covariance = 0;
+  let marketVariance = 0;
+
+  for (let i = 0; i < stock.length; i++) {
+    covariance += (stock[i]-avgStock)*(market[i]-avgMarket);
+    marketVariance += Math.pow(market[i]-avgMarket,2);
+  }
+
+  return covariance / marketVariance;
+}
+
+function calculate() {
+
+  let stock = parseInput("stock");
+  let market = parseInput("market");
+  let rf = Number(document.getElementById("rf").value);
+
+  let avg = average(stock);
+  let vol = stdDev(stock, avg);
+  let beta = calcBeta(stock, market);
+  let sharpe = (avg - rf) / vol;
+
+  document.getElementById("avg").innerText = avg.toFixed(2) + "%";
+  document.getElementById("vol").innerText = vol.toFixed(2);
+  document.getElementById("beta").innerText = beta.toFixed(2);
+  document.getElementById("sharpe").innerText = sharpe.toFixed(2);
+}
+
+</script>
+
+</body>
+</html>
