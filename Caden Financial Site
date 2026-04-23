@@ -1,87 +1,22 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Caden Munro Financial Analysis Tool</title>
-
-  <style>
-    body {
-      font-family: Arial;
-      background-color: #f5f7fa;
-      padding: 30px;
-      text-align: center;
-    }
-
-    h1 {
-      color: #2c3e50;
-    }
-
-    .container {
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      width: 400px;
-      margin: auto;
-      box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
-    }
-
-    input {
-      width: 90%;
-      padding: 10px;
-      margin: 10px 0;
-    }
-
-    button {
-      padding: 10px 20px;
-      background-color: #3498db;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #2980b9;
-    }
-
-    .results {
-      margin-top: 20px;
-      text-align: left;
-    }
-  </style>
-</head>
-
-<body>
-
-<h1>Caden Munro – Financial Analysis Tool</h1>
-
-<div class="container">
-
-  <h3>Enter Data</h3>
-
-  <p><strong>Stock Returns (%)</strong></p>
-  <input id="stock" placeholder="e.g. 5, -2, 3, 4">
-
-  <p><strong>Market Returns (%)</strong></p>
-  <input id="market" placeholder="e.g. 4, -1, 2, 3">
-
-  <p><strong>Risk-Free Rate (%)</strong></p>
-  <input id="rf" placeholder="e.g. 2">
-
-  <button onclick="calculate()">Calculate</button>
-
-  <div class="results">
-    <p><strong>Average Return:</strong> <span id="avg"></span></p>
-    <p><strong>Volatility (Std Dev):</strong> <span id="vol"></span></p>
-    <p><strong>Beta:</strong> <span id="beta"></span></p>
-    <p><strong>Sharpe Ratio:</strong> <span id="sharpe"></span></p>
-  </div>
-
-</div>
-
 <script>
 
-function parseInput(id) {
-  return document.getElementById(id).value.split(",").map(Number);
+async function getStockData(ticker) {
+  let url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?range=1mo&interval=1d`;
+  
+  let response = await fetch(url);
+  let data = await response.json();
+
+  let prices = data.chart.result[0].indicators.quote[0].close;
+
+  return prices;
+}
+
+function calculateReturns(prices) {
+  let returns = [];
+  for (let i = 1; i < prices.length; i++) {
+    returns.push(((prices[i] - prices[i-1]) / prices[i-1]) * 100);
+  }
+  return returns;
 }
 
 function average(data) {
@@ -108,15 +43,21 @@ function calcBeta(stock, market) {
   return covariance / marketVariance;
 }
 
-function calculate() {
+async function calculateReal() {
 
-  let stock = parseInput("stock");
-  let market = parseInput("market");
+  let stockTicker = document.getElementById("stockTicker").value;
+  let marketTicker = "SPY"; // S&P 500 proxy
   let rf = Number(document.getElementById("rf").value);
 
-  let avg = average(stock);
-  let vol = stdDev(stock, avg);
-  let beta = calcBeta(stock, market);
+  let stockPrices = await getStockData(stockTicker);
+  let marketPrices = await getStockData(marketTicker);
+
+  let stockReturns = calculateReturns(stockPrices);
+  let marketReturns = calculateReturns(marketPrices);
+
+  let avg = average(stockReturns);
+  let vol = stdDev(stockReturns, avg);
+  let beta = calcBeta(stockReturns, marketReturns);
   let sharpe = (avg - rf) / vol;
 
   document.getElementById("avg").innerText = avg.toFixed(2) + "%";
@@ -126,6 +67,10 @@ function calculate() {
 }
 
 </script>
+<p><strong>Stock Ticker (e.g. AAPL)</strong></p>
+<input id="stockTicker" placeholder="Enter ticker">
 
-</body>
-</html>
+<p><strong>Risk-Free Rate (%)</strong></p>
+<input id="rf" placeholder="e.g. 2">
+
+<button onclick="calculateReal()">Calculate with Real Data</button>
